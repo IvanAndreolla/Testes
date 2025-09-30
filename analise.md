@@ -1,3 +1,6 @@
+### Diagrama de Casos de Uso
+
+```mermaid
 graph TD
     subgraph Sistema: Jogo de Barco Solar
         UC1(Iniciar Nova Corrida)
@@ -15,3 +18,4 @@ graph TD
     Ator --|> UC6
 
     UC2 --|> UC5 : <<includes>>
+```
