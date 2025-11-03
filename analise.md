@@ -1,21 +1,49 @@
-### Diagrama de Casos de Uso
+# Análise orientada a objeto
+> [!NOTE]
+> A **análise** orientada a objeto consiste na descrição do problema a ser tratado, duas primeiras etapas da tabela abaixo, a definição de casos de uso e a definição do domínio do problema.
 
-```mermaid
-graph TD
-    subgraph Sistema: Jogo de Barco Solar
-        UC1("Iniciar Nova Corrida")
-        UC2("Controlar Barco Solar")
-        UC3("Visualizar HUD")
-        UC4("Pausar/Retomar Corrida")
-        UC5("Gerenciar Energia")
-        UC6("Sair da Corrida")
-    end
+## Descrição Geral do domínio do problema
 
-    Ator((Jogador)) --- UC1
-    Ator --- UC2
-    Ator --- UC3
-    Ator --- UC4
-    Ator --- UC6
+> [!NOTE]
+>Descrever de forma geral o domínio do problema.
 
-    UC2 -.-> UC5 : "<<include>>"
-```
+O projeto é um jogo de corrida de barcos solares com visão de cima para baixo (*top-down*). O jogador controla um barco e compete contra oponentes em diferentes pistas. A mecânica central do jogo gira em torno do gerenciamento de energia: acelerar consome a bateria, que por sua vez é recarregada pela exposição à luz solar. O jogador deve, portanto, equilibrar velocidade com estratégia de posicionamento para vencer a corrida.
+
+Para a estruturação dos passos futuros, foram decididas as [especificações](especificacoes.md) iniciais das pistas do jogo.
+
+> [!NOTE]
+>Possíveis requisitos funcionais e não-funcionais podem ser elencados aqui.
+> **Requisitos Funcionais:**
+> - O jogador deve poder controlar o barco (acelerar, frear, virar).
+> - A bateria do barco deve diminuir com a aceleração.
+> - A bateria do barco deve recarregar sob a luz do sol.
+> - O jogo deve ter um sistema de checkpoints e contagem de voltas.
+> - O jogo deve declarar um vencedor ao final da corrida.
+>
+> **Requisitos Não-Funcionais:**
+> - O jogo deve rodar a uma taxa de quadros suave (ex: 60 FPS).
+> - A interface gráfica deve ser intuitiva, mostrando velocidade e nível de bateria.
+
+## Diagrama de Casos de Uso
+
+> [!NOTE]
+>Apresentar o diagram de casos de uso, identificando as funcionalidades do sistema assim como os atores envolvidos
+
+<div align="center">
+    <img src="img/UseCases.svg"
+        style="padding: 10px"
+    >
+</div>
+
+O diagrama apresenta como ator o **Jogador**. As principais funcionalidades que ele pode invocar são: **Iniciar Nova Corrida**, **Controlar Barco Solar**, **Pausar/Retomar a Corrida** e **Sair da Corrida**. A ação de  inerentemente  a necessidade de , pois toda movimentação afeta o consumo ou ganho de bateria, sendo a mecânica principal do jogo. O jogador também pode  (velocímetro, bateria, etc.) durante a partida.
+ 
+## Diagrama de Domínio do problema
+
+> [!NOTE]
+>Elaborar um diagrama conceitual do domínio do problema.
+
+<div align="center">
+
+[Retroceder](README.md) | [Avançar](projeto.md)
+
+</div>
