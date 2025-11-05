@@ -6,7 +6,7 @@
 
 > Repositório destinado para o desenvolvimento do projeto final da disciplina PRG22107 - Programação orienta a objeto. 
 > 
-> Aluno: [Seu Nome Completo]
+> Aluno: Ivan Júnior Andreolla
 > Professor: Hugo Marcondes
 
 <p align=center><strong>SUMÁRIO</strong></p>
