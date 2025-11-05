@@ -6,7 +6,7 @@
 Para o projeto, primeiro foi desenvolvido um diagrama de classes simples, tentando apontar os componentes necessários para a solução e estruturação do desejado pelos casos de uso.
 
 <div align="center">
-    <img src="img/ClassDiagram.svg"
+    <img src="img/Class Diagram.svg"
         style="padding: 10px"
     >
 </div>
