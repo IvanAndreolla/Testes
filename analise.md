@@ -14,9 +14,9 @@ Para a estruturação dos passos futuros, foram decididas as [especificações](
 > [!NOTE]
 >Possíveis requisitos funcionais e não-funcionais podem ser elencados aqui.
 > **Requisitos Funcionais:**
-> - O jogador deve poder controlar o barco (acelerar, frear, virar).
+> - O jogador deve poder controlar o barco (acelerar, desacelerar / reverter motor, virar).
 > - A bateria do barco deve diminuir com a aceleração.
-> - A bateria do barco deve recarcarregar sob a luz do sol.
+> - A bateria do barco deve recarregar sob a luz do sol.
 > - O jogo deve ter um sistema de checkpoints e contagem de voltas.
 > - O jogo deve declarar um vencedor ao final da corrida.
 >
