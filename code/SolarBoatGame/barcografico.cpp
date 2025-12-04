@@ -3,19 +3,18 @@
 #include <cmath>
 #include <QDebug>
 
-// --- CONFIGURAÇÕES ---
 const int TOTAL_FRAMES = 64;
 const float GRAUS_POR_FRAME = 360.0f / TOTAL_FRAMES;
 
+// AJUSTE: 225 graus para alinhar sprites com física
 const float CALIBRACAO_OFFSET = 225.0f;
 
 BarcoGrafico::BarcoGrafico(QGraphicsItem *parent)
     : GameObjectGrafico(parent)
 {
     indiceAtual = 0;
-    debugEnabled = false;
+    debugEnabled = false; // Inicia desligado, F1 liga
 
-    // Init Debug
     vMotor = Ponto2D(0,0); vArrasto = Ponto2D(0,0); vRes = Ponto2D(0,0);
     valLeme = 0.0f;
     anguloLogicoAtual = 0.0f;
@@ -29,7 +28,6 @@ BarcoGrafico::BarcoGrafico(QGraphicsItem *parent)
             else img = QPixmap(10, 10);
         }
 
-        // Escala 160x160
         img = img.scaled(160, 160, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         frames.append(img);
 
@@ -37,7 +35,6 @@ BarcoGrafico::BarcoGrafico(QGraphicsItem *parent)
         QRegion region(mask);
         QPainterPath path;
         path.addRegion(region);
-
         QTransform trans;
         trans.translate(-img.width()/2, -img.height()/2);
         path = trans.map(path);
@@ -75,16 +72,13 @@ void BarcoGrafico::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
 
     if (frames.isEmpty()) return;
 
-    // Desenha Sprite
     QPixmap& spriteAtual = frames[indiceAtual];
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
     painter->drawPixmap(-spriteAtual.width()/2, -spriteAtual.height()/2, spriteAtual);
 
-    // --- DEBUG VISUAL ---
     if (debugEnabled) {
         auto toIso = [](float x, float y) { return QPointF(x - y, (x + y) / 2.0f); };
 
-        // 1. Triângulo de Referência (Branco - Direção Física)
         float rad = anguloLogicoAtual * (3.14159f / 180.0f);
         float cosA = std::cos(rad);
         float sinA = std::sin(rad);
@@ -94,39 +88,31 @@ void BarcoGrafico::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
         QPointF p3 = toIso(cosA * -30 + sinA * 20, sinA * -30 - cosA * 20);
 
         QPolygonF tri; tri << p1 << p2 << p3;
-
         painter->setBrush(Qt::NoBrush);
         painter->setPen(QPen(Qt::white, 2, Qt::DotLine));
         painter->drawPolygon(tri);
 
-        // 2. Vetores de Força (ESCALAS REDUZIDAS PARA NÃO SAIR DA TELA)
-
-        // MOTOR (Verde) - Escala 0.01 (5000N vira 50px)
+        // Vetores
         float scaleMotor = 0.01f;
         if (vMotor.mag() > 10.0f) {
-            QPointF pEnd = toIso(vMotor.x * scaleMotor, vMotor.y * scaleMotor);
             painter->setPen(QPen(Qt::green, 3));
-            painter->drawLine(QPointF(0,0), pEnd);
+            painter->drawLine(QPointF(0,0), toIso(vMotor.x*scaleMotor, vMotor.y*scaleMotor));
         }
 
-        // ARRASTO (Vermelho) - Escala 0.002 (Fica 5x menor que o motor para caber)
         float scaleArrasto = 0.002f;
         if (vArrasto.mag() > 10.0f) {
-            QPointF pEnd = toIso(vArrasto.x * scaleArrasto, vArrasto.y * scaleArrasto);
             painter->setPen(QPen(Qt::red, 2));
-            painter->drawLine(QPointF(0,0), pEnd);
+            painter->drawLine(QPointF(0,0), toIso(vArrasto.x*scaleArrasto, vArrasto.y*scaleArrasto));
         }
 
-        // RESULTANTE (Ciano) - Escala 0.002
         float scaleRes = 0.002f;
         if (vRes.mag() > 10.0f) {
-            QPointF pEnd = toIso(vRes.x * scaleRes, vRes.y * scaleRes);
             painter->setPen(QPen(Qt::cyan, 2));
-            painter->drawLine(QPointF(0,0), pEnd);
+            painter->drawLine(QPointF(0,0), toIso(vRes.x*scaleRes, vRes.y*scaleRes));
         }
 
-        // Hitbox (Amarelo)
-        painter->setPen(QPen(Qt::yellow, 1, Qt::DashLine));
+        // Hitbox
+        painter->setPen(QPen(Qt::yellow, 2, Qt::DashLine));
         painter->drawEllipse(QPointF(0, 0), 8.0f, 4.8f);
     }
 }
@@ -143,7 +129,7 @@ void BarcoGrafico::atualizarPosicaoTela(Ponto2D posicaoLogica, float anguloLogic
     while (angulo < 0) angulo += 360.0f;
     while (angulo >= 360) angulo -= 360.0f;
 
-    // --- MAPEAMENTO LINEAR + OFFSET ---
+    // Mapeamento Linear
     float anguloFinal = angulo + CALIBRACAO_OFFSET;
 
     int index = (int)std::round(anguloFinal / GRAUS_POR_FRAME);

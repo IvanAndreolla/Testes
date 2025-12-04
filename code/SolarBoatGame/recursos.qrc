@@ -3,7 +3,6 @@
         <file>barco.png</file>
         <file>boia_vermelha.png</file>
         <file>ilha.png</file>
-        <file>mar.png</file>
         <file>boia_verde.png</file>
         <file>nuvem.png</file>
         <file>barco_63.png</file>
@@ -70,5 +69,6 @@
         <file>barco_0.png</file>
         <file>barco_2.png</file>
         <file>barco_1.png</file>
+        <file>mar.png</file>
     </qresource>
 </RCC>

@@ -22,6 +22,7 @@ GameManager::GameManager(QGraphicsScene *scene, QGraphicsView *view,
     pista = new Pista();
     texturaNuvem.load(":/nuvem.png");
 
+    modoDebug = false; // Debug começa desligado
     jogadorLogico = new BarcoJogador(0, 0, "JOGADOR");
     jogadorVisual = new BarcoGrafico();
     todosBarcos.append(jogadorLogico);
@@ -29,6 +30,7 @@ GameManager::GameManager(QGraphicsScene *scene, QGraphicsView *view,
     for (int i = 0; i < 3; ++i) {
         BarcoOponente* op = new BarcoOponente(0, 0, QString("CPU %1").arg(i+1));
         BarcoGrafico* vis = new BarcoGrafico();
+        scene->addItem(vis); // Adiciona para não crashar, mas limpa no iniciar
         oponentesLogicos.append(op);
         oponentesVisuais.append(vis);
         posicoesAnterioresOponentes.append(Ponto2D(0,0));
@@ -60,11 +62,18 @@ GameManager::~GameManager() {
 }
 
 void GameManager::processarEvento(QKeyEvent *event, bool pressionado) {
-    if (pressionado && event->key() == Qt::Key_Escape) {
-        if (estadoAtual == JOGANDO) pausarJogo();
-        else if (estadoAtual == PAUSADO) retomarJogo();
+    if (pressionado) {
+        if (event->key() == Qt::Key_Escape) {
+            if (estadoAtual == JOGANDO) pausarJogo();
+            else if (estadoAtual == PAUSADO) retomarJogo();
+        }
+        // Tecla F1: Alterna Debug para TODOS
+        if (event->key() == Qt::Key_F1) {
+            modoDebug = !modoDebug;
+            if (jogadorVisual) jogadorVisual->setDebug(modoDebug);
+            for (auto* vis : oponentesVisuais) if (vis) vis->setDebug(modoDebug);
+        }
     }
-
     if (pressionado) inputManager->processarPressaoTecla(event);
     else inputManager->processarSolturaTecla(event);
 }
@@ -124,24 +133,30 @@ void GameManager::iniciarJogo(Pista::Tipo tipo) {
     pista->gerarCenario(scene, tipo);
     Ponto2D start = pista->getPosicaoLargada();
 
-    jogadorLogico->resetar(start.x, start.y);
-    todosBarcos.append(jogadorLogico);
+    // Grid de Largada
+    float espX = 150.0f;
+    float espY = 120.0f;
 
+    // Jogador
+    jogadorLogico->resetar(start.x - espX, start.y);
+    todosBarcos.append(jogadorLogico);
     jogadorVisual = new BarcoGrafico();
+    jogadorVisual->setDebug(modoDebug); // Respeita estado atual
     scene->addItem(jogadorVisual);
     posicaoAnteriorJogador = jogadorLogico->getPosicao();
 
-    for (int i = 0; i < 3; ++i) {
-        float offX = (std::rand() % 200 - 100);
-        float offY = (std::rand() % 200 - 100);
-        BarcoOponente* op = oponentesLogicos[i];
-        op->resetar(start.x - 200 + offX, start.y + offY);
-        posicoesAnterioresOponentes.append(op->getPosicao());
-        todosBarcos.append(op);
+    // Oponentes
+    oponentesLogicos[0]->resetar(start.x + espX, start.y);
+    oponentesLogicos[1]->resetar(start.x - espX, start.y + espY);
+    oponentesLogicos[2]->resetar(start.x + espX, start.y + espY);
 
+    for (int i = 0; i < 3; ++i) {
         BarcoGrafico* vis = new BarcoGrafico();
+        vis->setDebug(modoDebug); // Respeita estado atual
         scene->addItem(vis);
         oponentesVisuais.append(vis);
+        todosBarcos.append(oponentesLogicos[i]);
+        posicoesAnterioresOponentes.append(oponentesLogicos[i]->getPosicao());
     }
 
     criarNuvens();
@@ -215,9 +230,8 @@ void GameManager::fimDeJogo(bool venceu) {
     estadoAtual = GAMEOVER;
     timer->stop();
     atualizarRanking();
-
     if (venceu) {
-        labelTitulo->setText("VITÓRIA!\nCorrida Completada!");
+        labelTitulo->setText("CORRIDA FINALIZADA!");
         labelTitulo->setStyleSheet("font-size: 48px; font-weight: bold; color: #00ff00; background-color: rgba(0,0,0,150); padding: 20px; border-radius: 10px;");
     } else {
         labelTitulo->setText("DERROTA");
@@ -264,8 +278,6 @@ void GameManager::gameLoop() {
     }
 
     atualizarNuvens();
-
-    // 1. Limpa debug do frame anterior
     jogadorLogico->limparDebug();
 
     posicaoAnteriorJogador = jogadorLogico->getPosicao();
@@ -275,7 +287,7 @@ void GameManager::gameLoop() {
         jogadorLogico->processarInput(inputManager);
         jogadorLogico->atualizar(0.016f);
 
-        // 2. Atualiza Debug
+        // Debug Jogador
         jogadorVisual->atualizarDebugInfo(
             jogadorLogico->getDebugForcaMotor(),
             jogadorLogico->getDebugForcaArrasto(),
@@ -298,32 +310,35 @@ void GameManager::gameLoop() {
             }
         }
         if (jogadorLogico->getBateria() <= 0) { fimDeJogo(false); return; }
+    } else {
+        // Se terminou, apenas atualiza inércia
+        jogadorLogico->atualizar(0.016f);
+        // Atualiza visual do debug (sem forças) para o barco não "congelar" as setas
+        jogadorVisual->atualizarDebugInfo(Ponto2D(0,0), Ponto2D(0,0), Ponto2D(0,0), 0);
     }
 
     jogadorVisual->atualizarPosicaoTela(jogadorLogico->getPosicao(), jogadorLogico->getAngulo());
     atualizarProfundidadeVisual();
 
+    // Colisões Barco x Barco
     for (int i = 0; i < oponentesVisuais.size(); ++i) {
-        if (!jogadorLogico->isTerminado() && !oponentesLogicos[i]->isTerminado()) {
-            if (jogadorVisual->collidesWithItem(oponentesVisuais[i], Qt::IntersectsItemShape)) {
-                jogadorLogico->colidirComBarco(oponentesLogicos[i]);
-                oponentesLogicos[i]->colidirComBarco(jogadorLogico);
-            }
+        if (jogadorVisual->collidesWithItem(oponentesVisuais[i], Qt::IntersectsItemShape)) {
+            jogadorLogico->colidirComBarco(oponentesLogicos[i]);
+            oponentesLogicos[i]->colidirComBarco(jogadorLogico);
         }
     }
     for (int i = 0; i < oponentesVisuais.size(); ++i) {
         for (int j = i + 1; j < oponentesVisuais.size(); ++j) {
-            if (!oponentesLogicos[i]->isTerminado() && !oponentesLogicos[j]->isTerminado()) {
-                if (oponentesVisuais[i]->collidesWithItem(oponentesVisuais[j], Qt::IntersectsItemShape)) {
-                    oponentesLogicos[i]->colidirComBarco(oponentesLogicos[j]);
-                    oponentesLogicos[j]->colidirComBarco(oponentesLogicos[i]);
-                }
+            if (oponentesVisuais[i]->collidesWithItem(oponentesVisuais[j], Qt::IntersectsItemShape)) {
+                oponentesLogicos[i]->colidirComBarco(oponentesLogicos[j]);
+                oponentesLogicos[j]->colidirComBarco(oponentesLogicos[i]);
             }
         }
     }
 
     view->centerOn(jogadorVisual);
 
+    // Oponentes
     for (int i = 0; i < oponentesLogicos.size(); ++i) {
         BarcoOponente* op = oponentesLogicos[i];
         if (!op->isTerminado()) {
@@ -340,13 +355,22 @@ void GameManager::gameLoop() {
                     op->incrementarCheckpoint(checkpoints.size());
                     if (op->getVoltaAtual() > 3) {
                         op->setTerminado(true);
-                        if(!barcosFinalizados.contains(op)) barcosFinalizados.append(op);
+                        barcosFinalizados.append(op);
                     }
                 }
             }
-            posicoesAnterioresOponentes[i] = op->getPosicao();
+        } else {
+            op->atualizar(0.016f);
         }
         oponentesVisuais[i]->atualizarPosicaoTela(op->getPosicao(), op->getAngulo());
+
+        // --- ALTERAÇÃO: PASSA DEBUG PARA OPONENTES ---
+        oponentesVisuais[i]->atualizarDebugInfo(
+            op->getDebugForcaMotor(),
+            op->getDebugForcaArrasto(),
+            op->getDebugForcaResultante(),
+            op->getDebugAnguloLeme()
+            );
     }
 
     barraBateria->setValue((int)jogadorLogico->getBateria());
@@ -359,7 +383,7 @@ void GameManager::gameLoop() {
     if (jogadorLogico->isTerminado()) labelVoltas->setText("FINALIZADO");
     else {
         int v = jogadorLogico->getVoltaAtual();
-        if (v == 0) labelVoltas->setText("Posicione para a LARGADA");
+        if (v == 0) labelVoltas->setText("LARGADA");
         else labelVoltas->setText(QString("Volta: %1/3").arg(v));
     }
 
